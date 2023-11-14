@@ -700,9 +700,6 @@ class Select_Month(Calendar):
         except calendar.IllegalMonthError:
             messagebox.showerror("Error", "Please enter month between 1-12")
             pass
-        
-        
-
 
 class App:
     def __init__(self):
