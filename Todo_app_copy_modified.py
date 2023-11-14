@@ -5,6 +5,29 @@ import time
 import abc
 import pickle
 
+class NoInput(Exception):
+    def __init__(self):
+        messagebox.showerror("Error", "Please enter month and year")
+
+class NoTask(Exception):
+    def __init__(self):
+        messagebox.showerror("Error", "Please enter task")
+
+class NoFile(Exception):
+    def __init__(self):
+        messagebox.showerror("Error", "Please select file")
+
+class NoTaskSelected(Exception):
+    def __init__(self):
+        messagebox.showerror("Error", "Please select task")
+        
+class NoTaskToDelete(Exception):
+    def __init__(self):
+        messagebox.showerror("Error", "Please select task to delete")
+
+class ErrorYear(Exception):
+    def __init__(self):
+        messagebox.showerror("Error", "Please enter year between 1900-3000")
 
 class Data(abc.ABC):
     def __init__(self, month, year, data, task_history=[]):
@@ -127,56 +150,72 @@ class Task_manager(Data):
         status = self.status_box.get()
         tag = self.tag_box.get()
         # add error handling
-        if task == "":
-            messagebox.showerror("Error", "Please enter task")
-        else:
-            self.count = len(self.my_tree.get_children())
-            item_id = f"{status.lower()}_{self.count}"
-            self.my_tree.insert(parent='', index='end', iid=item_id,
-                                values=(task, status, tag, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())), tags=(status.lower(),))
-            self.data[self.day].append(
-                (task, status, tag, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
-            self.task_history.append([task, status, tag, self.day, 'add', time.strftime(
-                '%Y-%m-%d %H:%M:%S', time.localtime())])
+        try:
+            if task == "":
+                raise NoTask
+            else:
+                self.count = len(self.my_tree.get_children())
+                item_id = f"{status.lower()}_{self.count}"
+                self.my_tree.insert(parent='', index='end', iid=item_id,
+                                    values=(task, status, tag, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())), tags=(status.lower(),))
+                self.data[self.day].append(
+                    (task, status, tag, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())))
+                self.task_history.insert(0, [task, status, tag, self.day, 'add', time.strftime(
+                    '%Y-%m-%d %H:%M:%S', time.localtime())])
+        except NoTask:
+            pass
+                # self.task_history.append([task, status, tag, self.day, 'add', time.strftime(
+                #     '%Y-%m-%d %H:%M:%S', time.localtime())])
             self.task_box.delete(0, "end")
             self.tag_box.delete(0, "end")
             self.status_box.set("Not started")
 
     def select_task(self):
-        selected = self.my_tree.focus()
-        # add error handling
-        if selected == "":
-            messagebox.showerror("Error", "Please select task")
-        else:
-            values = self.my_tree.item(selected, "values")
-            self.task_box.delete(0, "end")
-            self.task_box.insert(0, values[0])
-            self.status_box.set(values[1])
-            self.tag_box.delete(0, "end")
-            self.tag_box.insert(0, values[2])
-            self.my_tree.delete(selected)
-            self.data[self.day].remove(values)
-            self.task_history.append([values[0], values[1], values[2], self.day, 'select', time.strftime(
-                '%Y-%m-%d %H:%M:%S', time.localtime())])
+        try:
+            selected = self.my_tree.focus()
+            # add error handling
+            if selected == "":
+                raise NoTaskSelected
+            else:
+                values = self.my_tree.item(selected, "values")
+                self.task_box.delete(0, "end")
+                self.task_box.insert(0, values[0])
+                self.status_box.set(values[1])
+                self.tag_box.delete(0, "end")
+                self.tag_box.insert(0, values[2])
+                self.my_tree.delete(selected)
+                self.data[self.day].remove(values)
+                self.task_history.append([values[0], values[1], values[2], self.day, 'select', time.strftime(
+                    '%Y-%m-%d %H:%M:%S', time.localtime())])
+        except NoTaskSelected:
+            pass
 
     def delete_task(self):
-        selected = self.my_tree.focus()
-        # add error handling
-        if selected == "":
-            messagebox.showerror("Error", "Please select task")
-        else:
-            values = self.my_tree.item(selected, "values")
-            self.my_tree.delete(selected)
-            self.data[self.day].remove(values)
-            self.task_history.append([values[0], values[1], values[2], self.day, 'delete', time.strftime(
-                '%Y-%m-%d %H:%M:%S', time.localtime())])
+        try:
+            selected = self.my_tree.focus()
+            # add error handling
+            if selected == "":
+                raise NoTaskToDelete
+            else:
+                values = self.my_tree.item(selected, "values")
+                self.my_tree.delete(selected)
+                self.data[self.day].remove(values)
+                self.task_history.append([values[0], values[1], values[2], self.day, 'delete', time.strftime(
+                    '%Y-%m-%d %H:%M:%S', time.localtime())])
+        except NoTaskToDelete:
+            pass
 
     def delete_all(self):
-        for child in self.my_tree.get_children():
-            self.my_tree.delete(child)
-        self.data[self.day] = []
-        self.task_history.append(['', '', '', self.day, 'delete_all', time.strftime(
-            '%Y-%m-%d %H:%M:%S', time.localtime())])
+        try:
+            if self.my_tree.get_children() == []:
+                raise NoTaskToDelete
+            for child in self.my_tree.get_children():
+                self.my_tree.delete(child)
+            self.data[self.day] = []
+            self.task_history.append(['', '', '', self.day, 'delete_all', time.strftime(
+                '%Y-%m-%d %H:%M:%S', time.localtime())])
+        except NoTaskToDelete:
+            pass
 
     def share(self):
         self.share_window = tk.Tk()
@@ -206,15 +245,18 @@ class Task_manager(Data):
         self.share_window.mainloop()
 
     def write_to_file(self):
-        file = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes=(
-            ("Text file", "*.txt"), ("All files", "*.*")))
-        if file is None:
-            return
-        else:
-            with open(file.name, 'w') as file:
-                file.write(self.text.get(1.0, 'end-1c'))
-                file.close()
-                messagebox.showinfo("Success", "File saved")
+        try:
+            file = filedialog.asksaveasfile(mode='w', defaultextension=".txt", filetypes=(
+                ("Text file", "*.txt"), ("All files", "*.*")))
+            if file is None:
+                raise NoFile
+            else:
+                with open(file.name, 'w') as file:
+                    file.write(self.text.get(1.0, 'end-1c'))
+                    file.close()
+                    messagebox.showinfo("Success", "File saved")
+        except NoFile:
+            pass
 
     def copy(self):
         self.share_window.clipboard_clear()
@@ -380,37 +422,38 @@ class Category(Data):
     def show(self):
         self.category.delete(0, 'end')
 
-        status = self.status_box.get()
-        tag = self.tag_box.get()
-        # add error handling
-        if status == "" and tag == "":
-            messagebox.showerror("Error", "Please select status or tag")
-
-        if status == "All" and tag == "":
-            for (day, tasks) in self.data.items():
-                for task in tasks:
-                    self.category.insert(
-                        'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
-        elif status == "All" and tag != "":
-            for (day, tasks) in self.data.items():
-                for task in tasks:
-                    if task[2] == tag:
+        try:
+            status = self.status_box.get()
+            tag = self.tag_box.get()
+            if status == "" and tag == "":
+                raise NoInput
+            
+            if status == "All" and tag == "":
+                for (day, tasks) in self.data.items():
+                    for task in tasks:
                         self.category.insert(
-                        'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
-        elif status != "All" and tag == "":
-            for (day, tasks) in self.data.items():
-                for task in tasks:
-                    if task[1] == status:
-                        self.category.insert(
-                        'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
-        else:
-            for (day, tasks) in self.data.items():
-                for task in tasks:
-                    if task[1] == status and task[2] == tag:
-                        self.category.insert(
-                        'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
-        self.category.update()
-
+                            'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
+            elif status == "All" and tag != "":
+                for (day, tasks) in self.data.items():
+                    for task in tasks:
+                        if task[2] == tag:
+                            self.category.insert(
+                            'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
+            elif status != "All" and tag == "":
+                for (day, tasks) in self.data.items():
+                    for task in tasks:
+                        if task[1] == status:
+                            self.category.insert(
+                            'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
+            else:
+                for (day, tasks) in self.data.items():
+                    for task in tasks:
+                        if task[1] == status and task[2] == tag:
+                            self.category.insert(
+                            'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
+            self.category.update()
+        except NoInput:
+            pass
 
 class Generate_Calendar(Data):
     def __init__(self, month, year, data, task_history):
@@ -424,6 +467,8 @@ class Generate_Calendar(Data):
 
         self.button1 = tk.Frame(self.window, bg="#FFFFFF")
         self.button1.grid(row=2)
+        self.button2 = tk.Frame(self.window, bg="#FFFFFF")
+        self.button2.grid(row=3)
 
         self.label = tk.Label(self.topic, text=f"Month: {self.month} Year: {self.year}",
                               font=self.head_font, bg="#FFFFFF")
@@ -454,18 +499,64 @@ class Calendar(Task_manager, Generate_Calendar):
         self.window.title("Calendar")
         self.window.configure(bg="#FFFFFF")
 
-        tk.Button(self.button1, text="Category", height=2, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
+        tk.Button(self.button1, text="Category", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
                   activebackground='#1b65af', font=self.body_font, command=self.category).grid(row=1, column=0, padx=10, pady=5, sticky='NSEW')
-        tk.Button(self.button1, text="Statistics", height=2, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
+        tk.Button(self.button1, text="Statistics", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
                   activebackground='#1b65af', font=self.body_font, command=self.statistics).grid(row=1, column=1, padx=10, pady=5, sticky='NSEW')
-        tk.Button(self.button1, text="Share", height=2, width=10, bg='#FA8072', activebackground="#DD4124", relief='groove',
+        tk.Button(self.button1, text="Share", height=1, width=10, bg='#FA8072', activebackground="#DD4124", relief='groove',
                   font=self.body_font, command=self.share_text).grid(row=1, column=2, padx=10, pady=5, sticky='NSEW')
-        tk.Button(self.button1, text="Save", height=2, width=10, bg='#4CAF50', fg='#FFFFFF', activebackground='#357c38', relief='groove', command=self.save,
+        tk.Button(self.button1, text="Save", height=1, width=10, bg='#4CAF50', fg='#FFFFFF', activebackground='#357c38', relief='groove', command=self.save,
                   font=self.body_font,).grid(row=1, column=3, padx=10, pady=5, sticky='NSEW')
-        tk.Button(self.button1, text="Check", height=2, width=10, relief='groove', activebackground='#c1814b', bg='#F4A460', command=self.check,
+        tk.Button(self.button1, text="Check", height=1, width=10, relief='groove', activebackground='#c1814b', bg='#F4A460', command=self.check,
                   font=self.body_font).grid(row=1, column=4, padx=10, pady=5, sticky='NSEW')
-
+        # next month button
+        tk.Button(self.button2, text="Next", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
+                    activebackground='#1b65af', font=self.body_font, command=self.next_month).grid(row=1, column=1, padx=10, pady=5, sticky='NSEW')
+        # previous month button
+        tk.Button(self.button2, text="Previous", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
+                    activebackground='#1b65af', font=self.body_font, command=self.previous_month).grid(row=1, column=2, padx=10, pady=5, sticky='NSEW')
+        # reset button 
+        tk.Button(self.button2, text="Reset", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
+                    activebackground='#1b65af', font=self.body_font, command=self.reset).grid(row=1, column=3, padx=10, pady=5, sticky='NSEW')
+        # exir button
+        tk.Button(self.button2, text="Exit", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
+                    activebackground='#1b65af', font=self.body_font, command=self.window.destroy).grid(row=1, column=4, padx=10, pady=5, sticky='NSEW')
+        
         self.window.mainloop()
+    
+    def update_calendar(self):
+        for bt in self.bts:
+            bt.destroy()
+        self.bts = []
+        for (i, day) in enumerate(self.date.itermonthdays(self.year, self.month)):
+            if day != 0:
+                bt = tk.Button(self.table, text=day, height=4, width=10, font=self.body_font, anchor='center',
+                               padx=2, pady=1, command=lambda day=day: self.show_task(day), bg='#FFFFFF', relief='groove')
+                bt.grid(row=i//7 + 2, column=i%7, sticky='NSEW')
+                self.bts.append(bt)
+    
+    def next_month(self):
+        if self.month == 12:
+            self.month = 1
+            self.year += 1
+        else:
+            self.month += 1
+        self.update_calendar()
+        self.label['text'] = f"Month: {self.month} Year: {self.year}"
+
+    def previous_month(self):
+        if self.month == 1:
+            self.month = 12
+            self.year -= 1
+        else:
+            self.month -= 1
+        self.update_calendar()
+        self.label['text'] = f"Month: {self.month} Year: {self.year}"
+        
+    def reset(self):
+        self.data = {}
+        self.update_calendar()
+        messagebox.showinfo("Success", "Reset completed")
 
     def show_task(self, day):
         self.task = Task_manager.__init__(
@@ -509,16 +600,19 @@ class Calendar(Task_manager, Generate_Calendar):
         self.share_window.mainloop()
 
     def save(self):
-        file = filedialog.asksaveasfile(mode='wb', defaultextension=".pkl", filetypes=(
-            ("Pickle file", "*.pkl"), ("All files", "*.*")))
-        if file is None:
-            return
-        else:
-            with open(file.name, 'wb') as file:
-                pickle.dump([self.month, self.year, self.data,
-                            self.task_history], file)
-                file.close()
-                messagebox.showinfo("Success", "File saved")
+        try:
+            file = filedialog.asksaveasfile(mode='wb', defaultextension=".pkl", filetypes=(
+                ("Pickle file", "*.pkl"), ("All files", "*.*")))
+            if file is None:
+                raise NoFile
+            else:
+                with open(file.name, 'wb') as file:
+                    pickle.dump([self.month, self.year, self.data,
+                                self.task_history], file)
+                    file.close()
+                    messagebox.showinfo("Success", "File saved")
+        except NoFile:
+            pass
 
     def check(self):
         for i, bt in enumerate(self.bts):
@@ -588,15 +682,26 @@ class Select_Month(Calendar):
         self.window.mainloop()
 
     def submit(self):
-        month = self.m.get()
-        year = self.y.get()
-        # add error handling
-        if month == "" or year == "":
-            messagebox.showerror("Error", "Please enter month and year")
-        else:
-            self.window.destroy()
-            self.cal = Calendar.__init__(self, int(month), int(
-                year), self.data, self.task_history)
+        try:
+            month = self.m.get()
+            year = self.y.get()
+            # add error handling
+            if month == "" or year == "":
+                raise NoInput
+            elif int(year) < 1900 or int(year) > 3000:
+                raise ErrorYear
+                # messagebox.showerror("Error", "Please enter month and year")
+            else:
+                self.window.destroy()
+                self.cal = Calendar.__init__(self, int(month), int(
+                    year), self.data, self.task_history)
+        except NoInput:
+            pass
+        except calendar.IllegalMonthError:
+            messagebox.showerror("Error", "Please enter month between 1-12")
+            pass
+        
+        
 
 
 class App:
@@ -621,20 +726,23 @@ class App:
         self.window.mainloop()
 
     def new(self):
-        self.window.destroy()
+        # self.window.destroy()
         self.cal = Select_Month()
 
     def open(self):
-        file = filedialog.askopenfile(mode='rb', defaultextension=".pkl", filetypes=(
-            ("Pickle file", "*.pkl"), ("All files", "*.*")))
-        if file is None:
-            return
-        else:
-            with open(file.name, 'rb') as file:
-                data = pickle.load(file)
-                file.close()
-                self.window.destroy()
-                self.cal = Calendar(data[0], data[1], data[2], data[3])
+        try:
+            file = filedialog.askopenfile(mode='rb', defaultextension=".pkl", filetypes=(
+                ("Pickle file", "*.pkl"), ("All files", "*.*")))
+            if file is None:
+                raise NoFile
+            else:
+                with open(file.name, 'rb') as file:
+                    data = pickle.load(file)
+                    file.close()
+                    self.window.destroy()
+                    self.cal = Calendar(data[0], data[1], data[2], data[3])
+        except NoFile:
+            pass
 
 
 if __name__ == "__main__":

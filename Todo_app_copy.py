@@ -27,7 +27,7 @@ class Data(abc.ABC):
 
 
 class Task_manager(Data):
-    def __init__(self, month, year, data, day, task_history=[]):
+    def __init__(self, month, year, data, task_history=[], day=0):
         Data.__init__(self, month, year, data, task_history)
         self.window = tk.Tk()
         self.window.title("Task Manager")
