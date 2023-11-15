@@ -7,27 +7,27 @@ import pickle
 
 class NoInput(Exception):
     def __init__(self):
-        messagebox.showerror("Error", "Please enter month and year")
+        messagebox.showerror("Input Error", "Please enter month and year")
 
 class NoTask(Exception):
     def __init__(self):
-        messagebox.showerror("Error", "Please enter task")
+        messagebox.showerror("Task Error", "Please enter task")
 
 class NoFile(Exception):
     def __init__(self):
-        messagebox.showerror("Error", "Please select file")
+        messagebox.showerror("File Error", "Please select file")
 
 class NoTaskSelected(Exception):
     def __init__(self):
-        messagebox.showerror("Error", "Please select task")
+        messagebox.showerror("Select Error", "Please select task")
         
 class NoTaskToDelete(Exception):
     def __init__(self):
-        messagebox.showerror("Error", "Please select task to delete")
+        messagebox.showerror("Delete Error", "Please select task to delete")
 
 class ErrorYear(Exception):
     def __init__(self):
-        messagebox.showerror("Error", "Please enter year between 1900-3000")
+        messagebox.showerror("Year Error", "Please enter year between 1900-3000")
 
 class Data(abc.ABC):
     def __init__(self, month, year, data, task_history=[]):
@@ -140,7 +140,7 @@ class Task_manager(Data):
                   relief='groove', command=self.delete_task).grid(row=3, column=1, columnspan=3, padx=10, pady=5, sticky='NSEW')
         tk.Button(self.add_frame, text="Delete All", font=self.body_font, bg="#FA8072", activebackground="#DD4124",
                   relief='groove', command=self.delete_all).grid(row=3, column=4, columnspan=3, padx=10, pady=5, sticky='NSEW')
-        tk.Button(self.add_frame, text="Share", font=self.body_font, command=self.share).grid(
+        tk.Button(self.add_frame, text="Share", font=self.body_font, command=self.share_text).grid(
             row=4, column=1, columnspan=6, padx=10, pady=5, sticky='NSEW')
 
         self.window.mainloop()
@@ -164,11 +164,9 @@ class Task_manager(Data):
                     '%Y-%m-%d %H:%M:%S', time.localtime())])
         except NoTask:
             pass
-                # self.task_history.append([task, status, tag, self.day, 'add', time.strftime(
-                #     '%Y-%m-%d %H:%M:%S', time.localtime())])
-            self.task_box.delete(0, "end")
-            self.tag_box.delete(0, "end")
-            self.status_box.set("Not started")
+        self.task_box.delete(0, "end")
+        self.tag_box.delete(0, "end")
+        self.status_box.set("Not started")
 
     def select_task(self):
         try:
@@ -185,7 +183,7 @@ class Task_manager(Data):
                 self.tag_box.insert(0, values[2])
                 self.my_tree.delete(selected)
                 self.data[self.day].remove(values)
-                self.task_history.append([values[0], values[1], values[2], self.day, 'select', time.strftime(
+                self.task_history.insert(0, [values[0], values[1], values[2], self.day, 'select', time.strftime(
                     '%Y-%m-%d %H:%M:%S', time.localtime())])
         except NoTaskSelected:
             pass
@@ -200,7 +198,7 @@ class Task_manager(Data):
                 values = self.my_tree.item(selected, "values")
                 self.my_tree.delete(selected)
                 self.data[self.day].remove(values)
-                self.task_history.append([values[0], values[1], values[2], self.day, 'delete', time.strftime(
+                self.task_history.insert(0, [values[0], values[1], values[2], self.day, 'delete', time.strftime(
                     '%Y-%m-%d %H:%M:%S', time.localtime())])
         except NoTaskToDelete:
             pass
@@ -217,7 +215,7 @@ class Task_manager(Data):
         except NoTaskToDelete:
             pass
 
-    def share(self):
+    def share_text(self):
         self.share_window = tk.Tk()
         self.share_window.title("Share")
         self.share_window.configure(bg="#FFFFFF")
@@ -290,19 +288,19 @@ class Statistics(Data):
         not_started = self.count_task("Not started")
 
         completed_label = tk.Label(
-            self.stat_frame, text=f"Completed: {completed}", font=self.body_font, bg="#FFFFFF")
+            self.stat_frame, text=f"Completed: {completed}", font=self.body_font, bg="#DBEDDB")
         completed_label.pack(expand=True, fill="both",
                              side='top', padx=10, pady=5)
         in_progress_label = tk.Label(
-            self.stat_frame, text=f"In progress: {in_progress}", font=self.body_font, bg="#FFFFFF")
+            self.stat_frame, text=f"In progress: {in_progress}", font=self.body_font, bg="#FDECC8")
         in_progress_label.pack(expand=True, fill="both",
                                side='top', padx=10, pady=5)
         not_started_label = tk.Label(
-            self.stat_frame, text=f"Not started: {not_started}", font=self.body_font, bg="#FFFFFF")
+            self.stat_frame, text=f"Not started: {not_started}", font=self.body_font, bg="#FFE2DD")
         not_started_label.pack(expand=True, fill="both",
                                side='top', padx=10, pady=5)
         total = tk.Label(
-            self.stat_frame, text=f"Total: {completed + in_progress + not_started}", font=self.body_font, bg="#FFFFFF")
+            self.stat_frame, text=f"Total: {completed + in_progress + not_started}", font=self.body_font, bg="#E3E2E0")
         total.pack(expand=True, fill="both", side='top', padx=10, pady=5)
 
         # history
@@ -315,8 +313,7 @@ class Statistics(Data):
         scrollbar.pack(side="right", fill="y")
         self.history_list['yscrollcommand'] = scrollbar.set
 
-        task_history = self.task_history[::-1]
-        for task in task_history:
+        for task in self.task_history:
             self.insert_task(task)
 
         data_points = []
@@ -361,10 +358,10 @@ class Statistics(Data):
             self.canvas.create_line(x1, y1, x2, y2, width=2, fill="blue")
             self.canvas.create_oval(x1 - 2, y1 - 2, x1 + 2, y1 + 2, fill="red")
             self.canvas.create_text(
-                x1, y1 - 10, text=f"{self.productivity((x1 - 50) / 20, 'Done'):.2f}%", font=self.body_font)
+                x1, y1 - 10, text=f"{self.productivity((x1 - 50) / 20, 'Done'):.2f}%", font=self.body_font, fill="#9b9b9b")
             self.canvas.create_oval(x2 - 2, y2 - 2, x2 + 2, y2 + 2, fill="red")
             self.canvas.create_text(
-                x2, y2 - 10, text=f"{self.productivity((x2 - 50) / 20, 'Done'):.2f}%", font=self.body_font)
+                x2, y2 - 10, text=f"{self.productivity((x2 - 50) / 20, 'Done'):.2f}%", font=self.body_font, fill="#9b9b9b")
 
     def count_task(self, status):
         count = 0
@@ -404,7 +401,7 @@ class Category(Data):
         tk.Label(self.window, text="Tag", font=self.body_font, bg="#FFFFFF").pack(
             expand=True, fill="both", padx=10, pady=5)
         self.tag_box = ttk.Combobox(
-            self.window, textvariable=tag, values=tags, font=self.body_font, state="readonly")
+            self.window, textvariable=tag, values=tags + ['All'], font=self.body_font, state="readonly")
         self.tag_box.pack(expand=True, fill="both", padx=10, pady=5)
         tk.Button(self.window, text="Show", font=self.body_font, command=self.show).pack(
             expand=True, fill="both", padx=10, pady=5)
@@ -428,7 +425,7 @@ class Category(Data):
             if status == "" and tag == "":
                 raise NoInput
             
-            if status == "All" and tag == "":
+            if status == "All" and tag == "All":
                 for (day, tasks) in self.data.items():
                     for task in tasks:
                         self.category.insert(
@@ -437,6 +434,12 @@ class Category(Data):
                 for (day, tasks) in self.data.items():
                     for task in tasks:
                         if task[2] == tag:
+                            self.category.insert(
+                            'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
+            elif status != "All" and tag == "All":
+                for (day, tasks) in self.data.items():
+                    for task in tasks:
+                        if task[1] == status:
                             self.category.insert(
                             'end', f"Day: {day} - {task[0]} - {task[1]} - {task[2]} - {task[3]}")
             elif status != "All" and tag == "":
@@ -454,6 +457,9 @@ class Category(Data):
             self.category.update()
         except NoInput:
             pass
+    
+    def share_text(self):
+        pass
 
 class Generate_Calendar(Data):
     def __init__(self, month, year, data, task_history):
@@ -503,7 +509,7 @@ class Calendar(Task_manager, Generate_Calendar):
                   activebackground='#1b65af', font=self.body_font, command=self.category).grid(row=1, column=0, padx=10, pady=5, sticky='NSEW')
         tk.Button(self.button1, text="Statistics", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
                   activebackground='#1b65af', font=self.body_font, command=self.statistics).grid(row=1, column=1, padx=10, pady=5, sticky='NSEW')
-        tk.Button(self.button1, text="Share", height=1, width=10, bg='#FA8072', activebackground="#DD4124", relief='groove',
+        tk.Button(self.button1, text="Share", height=1, width=10, bg='#4CAF50', activebackground="#357c38", relief='groove', fg='#FFFFFF',
                   font=self.body_font, command=self.share_text).grid(row=1, column=2, padx=10, pady=5, sticky='NSEW')
         tk.Button(self.button1, text="Save", height=1, width=10, bg='#4CAF50', fg='#FFFFFF', activebackground='#357c38', relief='groove', command=self.save,
                   font=self.body_font,).grid(row=1, column=3, padx=10, pady=5, sticky='NSEW')
@@ -516,11 +522,11 @@ class Calendar(Task_manager, Generate_Calendar):
         tk.Button(self.button2, text="Previous", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
                     activebackground='#1b65af', font=self.body_font, command=self.previous_month).grid(row=1, column=2, padx=10, pady=5, sticky='NSEW')
         # reset button 
-        tk.Button(self.button2, text="Reset", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
-                    activebackground='#1b65af', font=self.body_font, command=self.reset).grid(row=1, column=3, padx=10, pady=5, sticky='NSEW')
+        tk.Button(self.button2, text="Reset", height=1, width=10, bg='#FA8072', activebackground='#DD4124', relief='groove',
+                    font=self.body_font, command=self.reset).grid(row=1, column=3, padx=10, pady=5, sticky='NSEW')
         # exir button
-        tk.Button(self.button2, text="Exit", height=1, width=10, bg='#2383E2', fg='#FFFFFF', relief='groove',
-                    activebackground='#1b65af', font=self.body_font, command=self.window.destroy).grid(row=1, column=4, padx=10, pady=5, sticky='NSEW')
+        tk.Button(self.button2, text="Exit", height=1, width=10, bg='#FA8072', activebackground='#DD4124', relief='groove',
+                    font=self.body_font, command=self.window.destroy).grid(row=1, column=4, padx=10, pady=5, sticky='NSEW')
         
         self.window.mainloop()
     
@@ -554,21 +560,19 @@ class Calendar(Task_manager, Generate_Calendar):
         self.label['text'] = f"Month: {self.month} Year: {self.year}"
         
     def reset(self):
-        self.data = {}
+        for day in self.data.keys():
+            self.data[day] = []
         self.update_calendar()
         messagebox.showinfo("Success", "Reset completed")
 
     def show_task(self, day):
-        self.task = Task_manager.__init__(
-            self, self.month, self.year, self.data, self.task_history, day)
+        self.task = Task_manager(self.month, self.year, self.data, self.task_history, day)
 
     def statistics(self):
-        self.stat = Statistics(self.month, self.year,
-                               self.data, self.task_history)
+        self.stat = Statistics(self.month, self.year, self.data, self.task_history)
 
     def category(self):
-        self.cat = Category(self.month, self.year,
-                            self.data, self.task_history)
+        self.cat = Category(self.month, self.year, self.data, self.task_history)
 
     def share_text(self):
         self.share_window = tk.Tk()
@@ -690,7 +694,8 @@ class Select_Month(Calendar):
                 raise NoInput
             elif int(year) < 1900 or int(year) > 3000:
                 raise ErrorYear
-                # messagebox.showerror("Error", "Please enter month and year")
+            elif not month.isnumeric() or not year.isnumeric():
+                raise ValueError
             else:
                 self.window.destroy()
                 self.cal = Calendar.__init__(self, int(month), int(
@@ -698,8 +703,10 @@ class Select_Month(Calendar):
         except NoInput:
             pass
         except calendar.IllegalMonthError:
-            messagebox.showerror("Error", "Please enter month between 1-12")
-            pass
+            messagebox.showerror("Month Error", "Please enter month between 1-12")
+        except ValueError:
+            messagebox.showerror("Value Error", "Please enter month and year in number")
+            
 
 class App:
     def __init__(self):
