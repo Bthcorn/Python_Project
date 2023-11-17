@@ -48,7 +48,6 @@ class Data(abc.ABC):
         else:
             self.data = data
 
-
 class Task_manager(Data):
     def __init__(self, month, year, data, task_history=[], day=0):
         Data.__init__(self, month, year, data, task_history)
@@ -472,6 +471,7 @@ class Category(Data):
     def share_text(self):
         pass
 
+
 class Generate_Calendar(Data):
     def __init__(self, month, year, data, task_history):
         super().__init__(month, year, data, task_history)
@@ -504,10 +504,6 @@ class Generate_Calendar(Data):
                                padx=2, pady=1, command=lambda day=day: self.show_task(day), bg='#FFFFFF', relief='groove')
                 bt.grid(row=i//7 + 2, column=i % 7, sticky='NSEW')
                 self.bts.append(bt)
-
-    @abc.abstractmethod
-    def show_task(self, day):
-        pass
 
 
 class Calendar(Task_manager, Generate_Calendar):
