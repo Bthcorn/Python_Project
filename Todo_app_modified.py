@@ -36,6 +36,7 @@ class Data(abc.ABC):
         self.date = calendar.Calendar()
         self.task_history = task_history
         self.data = data
+        self.data_points = []
 
         self.head_font = ('Leelawadee UI', 20)
         self.body_font = ('Leelawadee UI Semilight', 12)
@@ -195,25 +196,34 @@ class Task_manager(Data):
             if selected == "":
                 raise NoTaskToDelete
             else:
-                values = self.my_tree.item(selected, "values")
-                self.my_tree.delete(selected)
-                self.data[self.day].remove(values)
-                self.task_history.insert(0, [values[0], values[1], values[2], self.day, 'delete', time.strftime(
-                    '%Y-%m-%d %H:%M:%S', time.localtime())])
+                if messagebox.askyesno("Delete", "Are you sure you want to delete this task?"):
+                    values = self.my_tree.item(selected, "values")
+                    self.my_tree.delete(selected)
+                    self.data[self.day].remove(values)
+                    self.task_history.insert(0, [values[0], values[1], values[2], self.day, 'delete', time.strftime(
+                        '%Y-%m-%d %H:%M:%S', time.localtime())])
+                else:
+                    return
         except NoTaskToDelete:
             pass
 
     def delete_all(self):
+        # ask yes no cancel
         try:
             if self.my_tree.get_children() == []:
                 raise NoTaskToDelete
-            for child in self.my_tree.get_children():
-                self.my_tree.delete(child)
-            self.data[self.day] = []
-            self.task_history.append(['', '', '', self.day, 'delete_all', time.strftime(
-                '%Y-%m-%d %H:%M:%S', time.localtime())])
+            else:
+                if messagebox.askyesno("Delete All", "Are you sure you want to delete all tasks?"):
+                    for child in self.my_tree.get_children():
+                        self.my_tree.delete(child)
+                    self.data[self.day] = []
+                    self.task_history.append(['', '', '', self.day, 'delete_all', time.strftime(
+                        '%Y-%m-%d %H:%M:%S', time.localtime())])
+                else:
+                    return
         except NoTaskToDelete:
             pass
+            
 
     def share_text(self):
         self.share_window = tk.Tk()
@@ -316,14 +326,14 @@ class Statistics(Data):
         for task in self.task_history:
             self.insert_task(task)
 
-        data_points = []
+        self.data_points = []
         for i in self.data.keys():
             x = 50 + int(i) * 20
             y = 250 - self.productivity(i, 'Done') / 100 * 200
-            data_points.append((x, y))
+            self.data_points.append((x, y))
 
         # plot points
-        self.draw_graph(data_points)
+        self.draw_graph(self.data_points)
 
         self.window.mainloop()
 
@@ -362,6 +372,7 @@ class Statistics(Data):
             self.canvas.create_oval(x2 - 2, y2 - 2, x2 + 2, y2 + 2, fill="red")
             self.canvas.create_text(
                 x2, y2 - 10, text=f"{self.productivity((x2 - 50) / 20, 'Done'):.2f}%", font=self.body_font, fill="#9b9b9b")
+        self.canvas.update()
 
     def count_task(self, status):
         count = 0
@@ -524,7 +535,7 @@ class Calendar(Task_manager, Generate_Calendar):
         # reset button 
         tk.Button(self.button2, text="Reset", height=1, width=10, bg='#FA8072', activebackground='#DD4124', relief='groove',
                     font=self.body_font, command=self.reset).grid(row=1, column=3, padx=10, pady=5, sticky='NSEW')
-        # exir button
+        # exit button
         tk.Button(self.button2, text="Exit", height=1, width=10, bg='#FA8072', activebackground='#DD4124', relief='groove',
                     font=self.body_font, command=self.window.destroy).grid(row=1, column=4, padx=10, pady=5, sticky='NSEW')
         
@@ -532,7 +543,8 @@ class Calendar(Task_manager, Generate_Calendar):
     
     def update_calendar(self):
         for bt in self.bts:
-            bt.destroy()
+            bt.grid_forget()
+            
         self.bts = []
         for (i, day) in enumerate(self.date.itermonthdays(self.year, self.month)):
             if day != 0:
@@ -540,33 +552,49 @@ class Calendar(Task_manager, Generate_Calendar):
                                padx=2, pady=1, command=lambda day=day: self.show_task(day), bg='#FFFFFF', relief='groove')
                 bt.grid(row=i//7 + 2, column=i%7, sticky='NSEW')
                 self.bts.append(bt)
-    
+        
+        for day in self.date.itermonthdays(self.year, self.month):
+            if day != 0:
+                self.data[day] = []
+        
     def next_month(self):
-        if self.month == 12:
-            self.month = 1
-            self.year += 1
+        # ask yes no cancel
+        if messagebox.askyesno("Next Month", "Are you sure you want to go to next month?"):
+            if self.month == 12:
+                self.month = 1
+                self.year += 1
+            else:
+                self.month += 1
+            self.update_calendar()
+            self.label['text'] = f"Month: {self.month} Year: {self.year}"
         else:
-            self.month += 1
-        self.update_calendar()
-        self.label['text'] = f"Month: {self.month} Year: {self.year}"
+            return
 
     def previous_month(self):
-        if self.month == 1:
-            self.month = 12
-            self.year -= 1
+        # ask yes no cancel
+        if messagebox.askyesno("Previous Month", "Are you sure you want to go to previous month?"):
+            if self.month == 1:
+                self.month = 12
+                self.year -= 1
+            else:
+                self.month -= 1
+            self.update_calendar()
+            self.label['text'] = f"Month: {self.month} Year: {self.year}"
         else:
-            self.month -= 1
-        self.update_calendar()
-        self.label['text'] = f"Month: {self.month} Year: {self.year}"
+            return
         
     def reset(self):
-        for day in self.data.keys():
-            self.data[day] = []
-        self.update_calendar()
-        messagebox.showinfo("Success", "Reset completed")
+        # ask yes no cancel
+        if messagebox.askyesno("Reset", "Are you sure you want to reset?"):
+            for day in self.data.keys():
+                self.data[day] = []
+            self.update_calendar()
+            messagebox.showinfo("Success", "Reset completed")
+        else:
+            pass
 
     def show_task(self, day):
-        self.task = Task_manager(self.month, self.year, self.data, self.task_history, day)
+        self.task = Task_manager.__init__(self, self.month, self.year, self.data, self.task_history, day)
 
     def statistics(self):
         self.stat = Statistics(self.month, self.year, self.data, self.task_history)
@@ -730,7 +758,6 @@ class App:
         self.window.mainloop()
 
     def new(self):
-        # self.window.destroy()
         self.cal = Select_Month()
 
     def open(self):
