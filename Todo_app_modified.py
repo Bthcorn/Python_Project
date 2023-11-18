@@ -590,7 +590,7 @@ class Calendar(Task_manager, Generate_Calendar):
             pass
 
     def show_task(self, day):
-        self.task = Task_manager.__init__(self, self.month, self.year, self.data, self.task_history, day)
+        self.task = Task_manager(self.month, self.year, self.data, self.task_history, day)
 
     def statistics(self):
         self.stat = Statistics(self.month, self.year, self.data, self.task_history)
