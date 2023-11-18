@@ -533,7 +533,7 @@ class Calendar(Task_manager, Generate_Calendar):
                     font=self.body_font, command=self.reset).grid(row=1, column=3, padx=10, pady=5, sticky='NSEW')
         # exit button
         tk.Button(self.button2, text="Exit", height=1, width=10, bg='#FA8072', activebackground='#DD4124', relief='groove',
-                    font=self.body_font, command=self.window.destroy).grid(row=1, column=4, padx=10, pady=5, sticky='NSEW')
+                    font=self.body_font, command=self.exit).grid(row=1, column=4, padx=10, pady=5, sticky='NSEW')
         
         self.window.mainloop()
     
@@ -586,6 +586,13 @@ class Calendar(Task_manager, Generate_Calendar):
                 self.data[day] = []
             self.update_calendar()
             messagebox.showinfo("Success", "Reset completed")
+        else:
+            pass
+
+    def exit(self):
+        # ask yes no cancel
+        if messagebox.askyesno("Exit", "Are you sure you want to exit?"):
+            self.window.destroy()
         else:
             pass
 
